@@ -2,6 +2,10 @@
 
 _Script python permettant d'obtenir les salles libres du pôle Leonard De Vinci_
 
+## Mention
+
+Toute la partie d'identification à été repris du dépôt de @Joytide : https://github.com/Joytide
+
 ## Pré-requis
 
 Une version Python inférieur à **3.10** (il y a des problèmes avec les versions trop récentes)
