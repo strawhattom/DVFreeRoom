@@ -16,10 +16,10 @@ domain_url = 'https://www.leonard-de-vinci.net/'
 login_url = domain_url + 'ajax.inc.php'
 room_url = domain_url + "student/salles/"
 
-#user = input("Log in (@edu.devinci.fr) : ")
-#pw = pwinput()
-user = ''
-pw = ''
+user = input("Log in (@edu.devinci.fr) : ")
+pw = pwinput()
+#user = ''
+#pw = ''
 
 
 def login(session):
