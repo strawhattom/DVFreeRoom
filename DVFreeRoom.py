@@ -1,5 +1,5 @@
 import requests,inquirer,re         #inquirer, alternative of whaaaaat prompt
-#from pprint import pprint          #for debug
+from pprint import pprint          #for debug
 from whaaaaat import prompt         #for CLI
 from datetime import datetime       #to get datetime
 from pwinput import pwinput         #password replacement with asterisks
@@ -12,15 +12,14 @@ from bs4 import BeautifulSoup       #web scrapping
 #To install all required packages : pip install -r requirements.txt  or pip3 install -r requirements.txt
 
 now = datetime.now().hour*60 +datetime.now().minute
-
 domain_url = 'https://www.leonard-de-vinci.net/' 
 login_url = domain_url + 'ajax.inc.php'
 room_url = domain_url + "student/salles/"
 
-user = input("Log in (@edu.devinci.fr) : ")
-pw = pwinput()
-#user = ''
-#pw = ''
+#user = input("Log in (@edu.devinci.fr) : ")
+#pw = pwinput()
+user = ''
+pw = ''
 
 
 def login(session):
@@ -125,6 +124,7 @@ def selectRows(table,choices,categories):
     return selected 
 
 def minutes(time):
+    #Convert a string time to minutes (01:00 => 60)
     split = time.split(":")
     return int(split[0])*60 + int(split[1])
 
@@ -158,14 +158,16 @@ def getNextCourse(time_now, data_set):
                 return slot[0]
     return None
 
+def minutesLeft(lesser,bigger):
+    left = bigger - lesser
+    return left
+
 def nowInSlot(time_now,slot_times):
 
     if len(slot_times) > 0:
-
-        for times in slot_times:
-
-            start_time = minutes(times[0])
-            end_time = minutes(times[1])
+ 
+            start_time = minutes(slot_times[0])
+            end_time = minutes(slot_times[1])
             current_time = time_now 
 
             if start_time <= current_time and end_time >= current_time:
@@ -174,10 +176,9 @@ def nowInSlot(time_now,slot_times):
     return False
 
 def roomIsFreeNow(data_set):
-
     #For each slots 
     for slots in data_set:
-        if nowInSlot(now,getHours(slots)):
+        if nowInSlot(now,slots):
             return False
     return True 
 
@@ -206,14 +207,17 @@ def getRoomInfos(session,row):
     usedToday = row.find_all("td",{'class':'success'})
     if len(usedToday) > 0:
         infos['used_today'] = True
-        infos['free_now'] = roomIsFreeNow(usedToday)
         infos['data_set'] = getHours(row)
+        infos['free_now'] = roomIsFreeNow(infos['data_set'])    
+        infos['next_course'] = getNextCourse(now,infos['data_set'])
+        infos['next_course_in'] = None if infos['next_course'] == None else minutesLeft(now,minutes(infos['next_course']))
 
     else:
-        infos['free_now'] = True
         infos['data_set'] = None
+        infos['free_now'] = True
+        infos['next_course'] = None
+        infos['next_course_in'] = None
 
-    infos['next_course'] = getNextCourse(now,infos['data_set'])
     return infos
 
 def room(session,rows): 
@@ -226,9 +230,18 @@ def room(session,rows):
 
     return available
 
+def formatTime(minutes):
+    if minutes == None: return ''
+    hourInt = minutes//60
+    hour = '' if hourInt == 0 else (str(hourInt) + 'h')
+
+    minutesInt = minutes%60
+    minute = str(minutesInt) + 'min'
+    return hour + minute
+
 def printAvailable(rooms):
     print("Les salles libres actuellement (" + datetime.now().strftime("%H:%M") + ") sont :")
-    print("\t  {0:34} | {1:14} | {2}".format(
+    print("\t  {0:34} | {1:20} | {2}".format(
                 "Nom de la salle",
                 "Prochain cours",
                 "Image de la salle")
@@ -238,9 +251,9 @@ def printAvailable(rooms):
         room = rooms[available]
         if room['free_now']:
             print(
-                "\t➜ {0:34} | {1:14} | 📷 {2}".format(
+                "\t➜ {0:34} | {1:20} | 📷 {2}".format(
                     room['name'],
-                    ('    Aucun' if room['next_course'] == None else "    " + room['next_course']),
+                    ('Aucun' if room['next_course'] == None else (room['next_course'] + " (dans " + formatTime(room['next_course_in']) + ")")),
                     ('aucune' if room['img'] == None else room['img'])
                 )
             )
